@@ -1,0 +1,21 @@
+data:
+  random_seed: 42
+  member_count: 2000
+  history_months: 15
+  index_date: "2026-01-01"
+
+model:
+  random_seed: 42
+  n_estimators: 300
+  max_depth: 5
+  learning_rate: 0.05
+  subsample: 0.85
+  colsample_bytree: 0.85
+
+evaluation:
+  minimum_mae_improvement_pct: 1.0
+  maximum_high_cost_recall_drop_points: 0.02
+
+gemini:
+  max_candidates: 3
+  temperature: 0.2

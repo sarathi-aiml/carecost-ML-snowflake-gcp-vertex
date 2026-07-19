@@ -1,0 +1,68 @@
+-- Member baseline features. One row per (MEMBER_ID, INDEX_DATE).
+-- Temporal boundary rules (mandatory):
+--   history:  SERVICE_DATE < INDEX_DATE
+--   target :  INDEX_DATE <= SERVICE_DATE < DATEADD(day, 90, INDEX_DATE)
+-- COST_ACCELERATION and PROVIDER_FRAGMENTATION are intentionally NOT computed here.
+USE WAREHOUSE CARECOST_WH;
+USE SCHEMA CARECOST_DEMO.ANALYTICS;
+
+CREATE OR REPLACE TRANSIENT TABLE MEMBER_FEATURES_BASE AS
+WITH index_dates AS (
+    -- 10 monthly index dates ending 2026-01-01 (matches config index_date).
+    SELECT DATEADD(month, -SEQ4(), DATE '2026-01-01') AS INDEX_DATE
+    FROM TABLE(GENERATOR(ROWCOUNT => 10))
+),
+members AS (
+    SELECT DISTINCT MEMBER_ID FROM RAW_CLAIMS
+),
+grid AS (
+    SELECT m.MEMBER_ID, d.INDEX_DATE
+    FROM members m CROSS JOIN index_dates d
+),
+hist AS (
+    SELECT
+        g.MEMBER_ID,
+        g.INDEX_DATE,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -30, g.INDEX_DATE), c.PAID_AMOUNT, 0))          AS COST_30D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE), c.PAID_AMOUNT, 0))          AS COST_90D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -180, g.INDEX_DATE), c.PAID_AMOUNT, 0))         AS COST_180D,
+        COUNT_IF(c.SERVICE_DATE >= DATEADD(day, -30, g.INDEX_DATE))                            AS CLAIM_COUNT_30D,
+        COUNT_IF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE))                            AS CLAIM_COUNT_90D,
+        COUNT_IF(c.SERVICE_DATE >= DATEADD(day, -180, g.INDEX_DATE))                           AS CLAIM_COUNT_180D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE), c.INPATIENT_FLAG, 0))       AS INPATIENT_COUNT_90D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -30, g.INDEX_DATE), c.ED_FLAG, 0))              AS ED_COUNT_30D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE), c.ED_FLAG, 0))              AS ED_COUNT_90D,
+        COUNT(DISTINCT IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE), c.PROVIDER_ID, NULL))    AS DISTINCT_PROVIDER_COUNT_90D,
+        COUNT(DISTINCT IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE), c.DIAGNOSIS_GROUP, NULL)) AS DISTINCT_DIAGNOSIS_COUNT_90D,
+        SUM(IFF(c.SERVICE_DATE >= DATEADD(day, -90, g.INDEX_DATE) AND c.INPATIENT_FLAG = 1, c.PAID_AMOUNT, 0)) AS INPATIENT_COST_90D
+    FROM grid g
+    JOIN RAW_CLAIMS c
+      ON c.MEMBER_ID = g.MEMBER_ID
+     AND c.SERVICE_DATE < g.INDEX_DATE            -- history boundary
+    GROUP BY g.MEMBER_ID, g.INDEX_DATE
+),
+target AS (
+    SELECT
+        g.MEMBER_ID,
+        g.INDEX_DATE,
+        SUM(c.PAID_AMOUNT) AS NEXT_90D_COST
+    FROM grid g
+    JOIN RAW_CLAIMS c
+      ON c.MEMBER_ID = g.MEMBER_ID
+     AND c.SERVICE_DATE >= g.INDEX_DATE
+     AND c.SERVICE_DATE <  DATEADD(day, 90, g.INDEX_DATE)   -- target window
+    GROUP BY g.MEMBER_ID, g.INDEX_DATE
+)
+SELECT
+    h.MEMBER_ID,
+    h.INDEX_DATE,
+    h.COST_30D, h.COST_90D, h.COST_180D,
+    h.CLAIM_COUNT_30D, h.CLAIM_COUNT_90D,
+    h.INPATIENT_COUNT_90D, h.ED_COUNT_30D, h.ED_COUNT_90D,
+    h.DISTINCT_PROVIDER_COUNT_90D, h.DISTINCT_DIAGNOSIS_COUNT_90D,
+    h.INPATIENT_COST_90D,
+    COALESCE(t.NEXT_90D_COST, 0) AS NEXT_90D_COST
+FROM hist h
+LEFT JOIN target t
+  ON t.MEMBER_ID = h.MEMBER_ID AND t.INDEX_DATE = h.INDEX_DATE
+WHERE h.CLAIM_COUNT_180D > 0;   -- keep members with history before the index date

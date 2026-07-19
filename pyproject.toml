@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carecost-fusion"
+version = "0.1.0"
+description = "CareCost Fusion — hybrid Snowflake + Vertex AI healthcare-cost MVP"
+requires-python = ">=3.11"
+dependencies = []
+
+# src/*.py are installed as top-level modules so `import features` works in
+# Vertex Pipeline components (the wheel is uploaded to GCS and pip-installed at
+# component runtime — the versioned-package MLOps pattern).
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = [
+    "generate_claims", "features", "modeling", "evaluation", "residuals",
+    "feature_catalog", "gemini_hypothesis", "vertex_geneval", "vertex_experiments",
+    "vertex_registry", "vertex_prediction", "pipeline", "snowflake_io",
+]

@@ -1,0 +1,18 @@
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+.ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/
+config.yaml
+service-account*.json
+artifacts/*.png
+!artifacts/.gitkeep
+# generated / build artifacts (may embed project id / bucket)
+pipeline.json
+dist/
+build/
+*.whl
+.snowflake/

@@ -1,0 +1,17 @@
+# Pin after first successful `pip install` in your environment.
+pandas
+numpy
+pyarrow
+scikit-learn
+xgboost==2.1.4          # pinned to match Vertex prebuilt serving container xgboost-cpu.2-1
+shap
+matplotlib
+jupyter
+python-dotenv
+pyyaml
+pydantic
+snowflake-connector-python[pandas]
+snowflake-snowpark-python
+google-genai
+google-cloud-aiplatform
+pytest
