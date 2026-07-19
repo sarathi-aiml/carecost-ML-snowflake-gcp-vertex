@@ -27,7 +27,6 @@ import pipeline as P  # noqa: E402
 PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")  # set your GCP project via env
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-CHAMPION_FEATURES = BASELINE_MODEL_FEATURES + ["COST_ACCELERATION"]
 
 SNOW, VERTEX, INK, MUTED = "#29B5E8", "#1A73E8", "#0E1526", "#5A6478"
 ACCEPT, REJECT, REVIEW = "#17935B", "#D0453B", "#C98A00"
@@ -152,7 +151,7 @@ def bar(df, x, y, color=None, scale=None, horizontal=False):
 
 
 # ----------------------------- cached compute (live only) -----------------------------
-@st.cache_resource(show_spinner="Loading claims + building features in Snowflake…")
+@st.cache_data(show_spinner="Loading claims + building features in Snowflake…")
 def build(member_count: int, seed: int):
     from snowflake_io import get_connection
     conn = get_connection()
@@ -165,12 +164,15 @@ def build(member_count: int, seed: int):
 
 
 @st.cache_resource(show_spinner=False)
-def champion_model(member_count: int, seed: int, _df: pd.DataFrame):
+def champion_model(member_count: int, seed: int, champ_features: tuple, _df: pd.DataFrame):
+    """Train the champion on the gate-selected feature set (keyed by champ_features)."""
     df = _df.copy()
-    df["COST_ACCELERATION"] = materialize(df, "COST_ACCELERATION")
+    for f in champ_features:
+        if f not in df.columns:
+            df[f] = materialize(df, f)
     split = temporal_split(df)
     m = make_model(P.DEFAULT_MODEL_CFG)
-    m.fit(split.train[CHAMPION_FEATURES], np.log1p(split.train[TARGET].to_numpy()))
+    m.fit(split.train[list(champ_features)], np.log1p(split.train[TARGET].to_numpy()))
     return m, split
 
 
@@ -279,6 +281,7 @@ if "gemini" in st.session_state:
         hyp = {c.feature_name: c.hypothesis for c in g["response"].candidates}
         with st.spinner("Training one challenger per accepted feature…"):
             results = P.challenger_step(df, base, g["accepted"], hyp_by_name=hyp)
+        st.session_state["results"] = results  # section 6 serves the gate-ACCEPTED champion
         for r in results:
             st.markdown(
                 f'<div class="drow"><span class="feat">{r["feature_name"]}</span>'
@@ -296,12 +299,20 @@ if "gemini" in st.session_state:
 with st.container(border=True):
     section("06", "Champion serving + Explainable AI", "vertex")
     walknote("06", show_walk)
-    model, split = champion_model(member_count, seed, df)
+    # Champion = baseline + the feature(s) the gate ACCEPTed. Until the gate has run,
+    # serve the baseline; never hardcode a winner (the holdout decides).
+    accepted_extra = [r["feature_name"] for r in st.session_state.get("results", [])
+                      if r["decision"] == "ACCEPT"]
+    champ_features = tuple(BASELINE_MODEL_FEATURES + accepted_extra)
+    st.caption("Champion features: baseline"
+               + (f" + {', '.join(accepted_extra)}" if accepted_extra
+                  else " (run the gate above to add ACCEPTed features)"))
+    model, split = champion_model(member_count, seed, champ_features, df)
     idx = st.selectbox("Test member", range(min(20, len(split.test))),
                        format_func=lambda i: str(split.test.iloc[i]["MEMBER_ID"]))
     row = split.test.iloc[int(idx)]
-    instance = [float(row[c]) for c in CHAMPION_FEATURES]
-    pred = float(np.expm1(model.predict(split.test[CHAMPION_FEATURES].iloc[[int(idx)]])[0]))
+    instance = [float(row[c]) for c in champ_features]
+    pred = float(np.expm1(model.predict(split.test[list(champ_features)].iloc[[int(idx)]])[0]))
     c1, c2 = st.columns([1, 1.3])
     with c1:
         kpis([{"lab": "Predicted 90-day $", "val": f"${pred:,.0f}"},
@@ -313,7 +324,7 @@ with st.container(border=True):
             st.info("No live endpoint. Deploy the champion (`vertex_prediction.deploy_champion`, see DEMO.md) "
                     "to serve predictions + Vertex Explainable AI here.")
         else:
-            attrs = explain(endpoint, [instance], CHAMPION_FEATURES)[0]
+            attrs = explain(endpoint, [instance], list(champ_features))[0]
             adf = pd.DataFrame({"feature": list(attrs), "attribution": [round(v, 3) for v in attrs.values()]})
             adf = adf.reindex(adf.attribution.abs().sort_values(ascending=False).index).head(8)
             adf["sign"] = np.where(adf.attribution >= 0, "raises cost", "lowers cost")

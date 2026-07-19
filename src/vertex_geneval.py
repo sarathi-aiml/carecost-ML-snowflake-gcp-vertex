@@ -51,6 +51,5 @@ def evaluate_hypotheses(candidates: list, residual_summary: dict, project: str,
 
 
 def _norm(v) -> float:
-    """Rubric score (1–5) → [0,1]."""
-    v = float(v)
-    return round(v / 5.0, 3) if v > 1.0 else round(v, 3)
+    """Map the 1–5 rubric score linearly to [0,1]: 1→0.0 (worst), 5→1.0 (best)."""
+    return round((float(v) - 1.0) / 4.0, 3)

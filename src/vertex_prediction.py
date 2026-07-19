@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import tempfile
 
+import numpy as np
+
 from vertex_registry import export_booster, upload_dir_to_gcs, SERVING_IMAGE
 
 MACHINE_TYPE = "n1-standard-2"
@@ -52,8 +54,14 @@ def deploy_champion(model, feature_names: list[str], *, project: str, bucket: st
 
 
 def predict(endpoint, instances: list[list[float]]) -> list[float]:
-    """Online prediction. instances = list of feature vectors (baseline feature order)."""
-    return list(endpoint.predict(instances=instances).predictions)
+    """Online prediction in **dollars**. instances = feature vectors (champion feature order).
+
+    The model is trained on ``log1p(cost)``, so the raw booster (served by the prebuilt
+    container) returns log-space values; we invert with ``expm1`` + clip so callers get
+    dollars, matching how the model is scored during training/evaluation.
+    """
+    raw = endpoint.predict(instances=instances).predictions
+    return [float(np.clip(np.expm1(float(v)), 0, None)) for v in raw]
 
 
 def explain(endpoint, instances: list[list[float]], feature_names: list[str]) -> list[dict]:

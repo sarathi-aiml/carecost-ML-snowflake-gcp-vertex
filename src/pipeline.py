@@ -29,7 +29,7 @@ class Baseline:
     split: object
     model: object
     pred: np.ndarray
-    metrics: dict
+    metrics: dict          # metrics on the temporal holdout (the test slice)
     median_metrics: dict
     high_cost: float
     residual: np.ndarray
@@ -43,6 +43,13 @@ def features_from_snowflake(conn, member_count=2000, history_months=15,
     """
     from pathlib import Path
     from snowflake_io import run_sql_script, write_df, read_table
+    # 01_base_features.sql hardcodes the 10 monthly index dates ending 2026-01-01, so the
+    # generated claims must share that anchor or the SQL index grid won't align (silent
+    # empty features). Fail loudly if a caller changes it without updating the SQL.
+    if index_date != "2026-01-01":
+        raise ValueError(
+            f"index_date={index_date!r}: the Snowflake feature SQL is anchored to '2026-01-01'. "
+            "Parameterize sql/01_base_features.sql before changing this.")
     sql = Path(__file__).resolve().parents[1] / "sql"
     claims = generate_claims(member_count, history_months, index_date, seed)
     run_sql_script(conn, sql / "00_setup.sql")
@@ -69,9 +76,9 @@ def train_baseline(df: pd.DataFrame, model_cfg=DEFAULT_MODEL_CFG) -> Baseline:
     split = temporal_split(df)
     thr = high_cost_threshold(split)
     model, pred = train_predict(split, BASELINE_MODEL_FEATURES, model_cfg)
-    y = split.test[TARGET].to_numpy()
-    return Baseline(split, model, pred, compute_metrics(y, pred, thr),
-                    compute_metrics(y, median_baseline(split), thr), thr, y - pred)
+    y_test = split.test[TARGET].to_numpy()
+    return Baseline(split, model, pred, compute_metrics(y_test, pred, thr),
+                    compute_metrics(y_test, median_baseline(split), thr), thr, y_test - pred)
 
 
 def residual_segment(base: Baseline) -> dict:
@@ -92,7 +99,15 @@ def gemini_step(segment: dict, project: str, location="us-central1",
 def challenger_step(df: pd.DataFrame, base: Baseline, accepted: list[str],
                     model_cfg=DEFAULT_MODEL_CFG, min_impr=1.0, max_recall_drop=0.02,
                     hyp_by_name=None) -> list[dict]:
-    """Train one challenger per accepted feature; apply the deterministic gate."""
+    """Train one challenger per accepted feature and apply the deterministic gate.
+
+    Evaluation uses one **chronological temporal holdout** (the test slice): every
+    challenger is trained on the same training window with identical hyperparameters,
+    adding exactly one feature, and judged on the same untouched holdout as the
+    baseline. (``temporal_split`` also carves a validation slice; it's reserved for a
+    future val-based model-selection step and asserted for ordering in the leakage
+    test, but this fixed 3-candidate gate decides directly on the holdout.)
+    """
     results = []
     for name in accepted:
         fdf = df.copy()

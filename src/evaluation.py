@@ -26,7 +26,9 @@ def compute_metrics(
 
     actual_high = y_true >= high_cost_threshold
     k = int(actual_high.sum())
-    if k == 0:
+    if k == 0 or np.ptp(y_pred) == 0:
+        # No high-cost members, or constant predictions (e.g. the median baseline) —
+        # ranking is undefined, so recall is not meaningful.
         recall = float("nan")
     else:
         top_pred = np.argsort(-y_pred)[:k]

@@ -76,12 +76,17 @@ def get_connection():
 
 
 def run_sql_script(conn, path: str | Path) -> None:
-    """Execute a semicolon-delimited .sql file statement by statement."""
-    sql = Path(path).read_text()
+    """Execute a semicolon-delimited .sql file statement by statement.
+
+    Strips whole-line ``--`` comments first (so a leading comment header never gets
+    bundled with — and silently skip — the first real statement), then splits on ``;``.
+    """
+    raw = Path(path).read_text()
+    sql = "\n".join(line for line in raw.splitlines() if not line.strip().startswith("--"))
     cur = conn.cursor()
     try:
         for stmt in (s.strip() for s in sql.split(";")):
-            if stmt and not stmt.startswith("--"):
+            if stmt:
                 cur.execute(stmt)
     except Exception as exc:
         raise RuntimeError(f"Failed executing {path}: {exc}") from exc
@@ -113,8 +118,8 @@ def snowflake_credits(conn, warehouse: str = WAREHOUSE, minutes: int = 60) -> fl
 
     Reads ACCOUNT_USAGE (up to ~3h latency); returns 0.0 if unavailable.
     """
+    cur = conn.cursor()
     try:
-        cur = conn.cursor()
         cur.execute(
             "SELECT COALESCE(SUM(CREDITS_USED),0) FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY "
             "WHERE WAREHOUSE_NAME=%s AND START_TIME >= DATEADD(minute,%s,CURRENT_TIMESTAMP())",
@@ -123,3 +128,5 @@ def snowflake_credits(conn, warehouse: str = WAREHOUSE, minutes: int = 60) -> fl
         return float(cur.fetchone()[0])
     except Exception:
         return 0.0
+    finally:
+        cur.close()

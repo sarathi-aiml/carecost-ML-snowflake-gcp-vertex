@@ -52,12 +52,16 @@ def make_model(model_cfg: dict) -> XGBRegressor:
     )
 
 
+def predict_cost(model, X) -> np.ndarray:
+    """Invert the log1p training target: expm1 + clip to non-negative dollars."""
+    return np.clip(np.expm1(model.predict(X)), 0, None)
+
+
 def train_predict(split: Split, feature_cols: list[str], model_cfg: dict):
-    """Train on log1p(target); return (fitted_model, test_pred_cost)."""
+    """Train on log1p(target); return (fitted_model, test_pred_cost in dollars)."""
     model = make_model(model_cfg)
     model.fit(split.train[feature_cols], np.log1p(split.train[TARGET].to_numpy()))
-    pred = np.expm1(model.predict(split.test[feature_cols]))
-    return model, np.clip(pred, 0, None)
+    return model, predict_cost(model, split.test[feature_cols])
 
 
 def median_baseline(split: Split) -> np.ndarray:
