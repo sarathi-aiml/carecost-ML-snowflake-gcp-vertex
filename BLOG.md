@@ -4,6 +4,15 @@
 features — and a holdout ML gate, not the model, decides which ones are real. We'll
 follow a single health-plan member all the way through.*
 
+> **The big idea in 30 seconds.** AI chatbots are great at *suggesting* ideas, but they
+> can't tell you whether a suggestion is actually right — they just sound confident. This
+> project puts an AI on a short leash: it looks at where a cost-prediction model is going
+> wrong and proposes fixes, but every fix is then tested on real data the model has never
+> seen, and only the ones that measurably help are kept. Think **brainstorming intern**
+> (the AI) plus **strict examiner** (the test). The intern proposes; the examiner decides;
+> the sensitive data stays locked in the warehouse the whole time. The rest of this post
+> shows exactly how, with the code.
+
 > 💻 **Code:** [`github.com/sarathi-aiml/carecost-fusion-snowflake-vertex`](https://github.com/sarathi-aiml/carecost-fusion-snowflake-vertex)
 > — every step below links to the exact file that implements it, so you can read the code
 > as you read the story. Design spec: [`SPEC.md`](SPEC.md) · architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md).

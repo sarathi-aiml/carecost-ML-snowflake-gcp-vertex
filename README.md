@@ -2,6 +2,31 @@
 
 > **Gemini proposes. XGBoost proves. Snowflake governs.**
 
+### 🧠 In plain English
+
+AI chatbots are great at *suggesting* ideas — but they can't tell you whether a suggestion is
+actually **right**. They just sound confident.
+
+This project puts an AI on a short leash. The task: predict how much a health-insurance member
+will cost over the next 90 days.
+
+- A traditional prediction model does the forecasting. It's good, but it misses a pattern.
+- The AI (**Google's Gemini**) looks at *where the model is wrong* and **suggests new clues** to add.
+- But the AI doesn't get to decide. Each suggestion is tested on real data the model has never
+  seen. **Only suggestions that measurably improve the forecast are kept.**
+- The sensitive data never leaves its secure warehouse (**Snowflake**) — the AI only ever sees an
+  anonymous summary.
+
+Think of it as a **brainstorming intern** (the AI) and a **strict examiner** (the test). The intern
+proposes; the examiner decides. In our run, the intern gave 3 confident ideas — the examiner kept 1
+and rejected 2, including one the AI was 90% sure about.
+
+*Result: the kept idea cut the forecast error, the rejected ones didn't. The examiner — not the AI — decided.*
+
+---
+
+### For engineers
+
 A hybrid MLOps demo where **Google Vertex AI is the ML control plane** and **Snowflake is
 the governed enterprise data source**. Gemini proposes healthcare-cost features via
 **function calling**; the **Vertex Gen AI Evaluation Service** scores them; runs are tracked
