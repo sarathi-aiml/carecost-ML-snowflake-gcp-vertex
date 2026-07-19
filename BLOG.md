@@ -4,7 +4,7 @@
 features — and a holdout ML gate, not the model, decides. Follow one member all the
 way through.*
 
-> 💻 **Code:** `https://github.com/<your-username>/carecost-fusion-snowflake-vertex`
+> 💻 **Code:** `https://github.com/sarathi-aiml/carecost-fusion-snowflake-vertex`
 > — every step below links to the file that implements it, so you can follow along in the repo.
 > Design spec: [`SPEC.md`](SPEC.md).
 
