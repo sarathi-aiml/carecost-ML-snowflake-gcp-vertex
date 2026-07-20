@@ -6,6 +6,8 @@
 
 **Healthcare cost prediction is a machine-learning problem. So why is everyone trying to solve it with a chatbot?**
 
+*A cross-cloud build: Google Vertex ML (Model Registry, Experiments, endpoints, Pipelines) + Snowflake.*
+
 A health plan needs to know which members will be expensive next quarter — to budget, and to get care teams to high-cost members early. It's a real, daily actuarial problem, not a hypothetical.
 
 You *could* paste a member's history into an AI and ask. It'll answer confidently — and you'll have no way to check it, repeat it, or measure it. A prediction you're accountable for isn't a conversation. It's a measurement.
