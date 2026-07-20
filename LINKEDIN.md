@@ -4,15 +4,15 @@
 
 ---
 
-**Healthcare cost prediction is a machine-learning problem. So why is everyone trying to solve it with a chatbot?**
+**Healthcare cost prediction is a machine-learning problem. So why are we trying to solve it with AI agents?**
 
 *Snowflake + Google Cloud – Vertex ML (Model Registry, Experiments, AI Eval for ML, Vertex Pipelines) — a cross-cloud build.*
 
 A health plan needs to know which members will be expensive next quarter — to budget, and to get care teams to high-cost members early. It's a real, daily actuarial problem, not a hypothetical.
 
-You *could* paste a member's history into an AI and ask. It'll answer confidently — and you'll have no way to check it, repeat it, or measure it. A prediction you're accountable for isn't a conversation. It's a measurement.
+You *could* hand a member's history to an AI agent and ask. It'll answer confidently — and you'll have no way to check it, repeat it, or measure it. A prediction you're accountable for isn't a conversation. It's a measurement.
 
-So I built it the way it should be built: **ML does the predicting, and AI makes the ML better.**
+So I built it ML-first: **ML does the predicting, and AI makes the ML better.**
 
 🔹 A gradient-boosted model — trained and tested on a proper time-based holdout (no peeking into the future) — predicts each member's next-90-day cost. ~2.4× more accurate than a naive baseline.
 
@@ -36,11 +36,11 @@ Full write-up + code 👉 [link]
 
 ## Shorter variant (~110 words)
 
-**Healthcare cost prediction is an ML problem — not a chatbot problem.**
+**Healthcare cost prediction is an ML problem — not an AI-agent problem.**
 
-A health plan needs to know who'll be expensive next quarter. Ask an AI directly and you get a confident number you can't check, repeat, or measure.
+A health plan needs to know who'll be expensive next quarter. Hand it to an AI agent and you get a confident number you can't check, repeat, or measure.
 
-So I built it right: **ML predicts, AI improves the ML.**
+So I built it ML-first: **ML predicts, AI improves the ML.**
 
 → A gradient-boosted model forecasts each member's next-90-day cost (2.4× better than baseline, tested on unseen data).
 → Gemini on Vertex AI proposes new features for where the model misses.
