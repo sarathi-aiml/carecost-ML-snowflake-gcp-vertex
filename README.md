@@ -41,8 +41,6 @@ gate — not the LLM — accepts or rejects each hypothesis. A **Vertex AI Pipel
 orchestrates the whole DAG.
 
 *Synthetic data only. No PHI. Not HIPAA compliant. A financial-forecasting experiment.*
-📖 The story: **[BLOG.md](BLOG.md)** · the design: **[ARCHITECTURE.md](ARCHITECTURE.md)** ·
-cost: **[TCO.md](TCO.md)** · demo script: **[DEMO.md](DEMO.md)**.
 
 ---
 
