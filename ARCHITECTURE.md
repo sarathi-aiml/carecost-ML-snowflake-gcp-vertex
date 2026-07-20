@@ -55,15 +55,7 @@ between them:
 | LLM fit | in-SQL/analytics enrichment (Cortex) | tool-constrained, evaluated, versioned, gated |
 | Boundary | keeps the data | receives only aggregate JSON + a KB artifact |
 
-## Error handling (fail loud — no fallbacks)
-This project **requires** the real services and raises clear errors when they're missing —
-no offline stubs, no mock modes, no silent degradation. That's deliberate: the point is
-that it genuinely runs on Snowflake + Vertex.
-- **No GCP project / creds** → Gemini, Gen AI Eval, Experiments, Registry all raise.
-- **No Snowflake / blocked IP** → connection raises an actionable network-policy error.
-- **Gemini returns no valid tool call** → treated as `STOP` (a real model decision).
-- **Malformed candidate** (unknown / duplicate / missing column / inf) → rejected in validation, never trained.
-- **No live endpoint** → the serving panel says to deploy one; it never fakes attributions.
+
 
 ## What I'd productionize next
 - Make Snowflake the single feature source (Dynamic Tables / Feature Store); give the Vertex Pipeline warehouse access via Cloud NAT + a reserved, allowlisted egress IP.
