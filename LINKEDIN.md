@@ -6,7 +6,7 @@
 
 **Healthcare cost prediction is a machine-learning problem. So why is everyone trying to solve it with a chatbot?**
 
-*A cross-cloud build: Google Vertex ML (Model Registry, Experiments, endpoints, Pipelines) + Snowflake.*
+*Snowflake + Google Cloud – Vertex ML (Model Registry, Experiments, AI Eval for ML, Vertex Pipelines) — a cross-cloud build.*
 
 A health plan needs to know which members will be expensive next quarter — to budget, and to get care teams to high-cost members early. It's a real, daily actuarial problem, not a hypothetical.
 
