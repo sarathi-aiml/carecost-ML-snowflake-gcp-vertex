@@ -1,8 +1,8 @@
 # Which members will be expensive next quarter?
 
 *A real healthcare-cost problem, solved three ways: the tempting "just ask the AI" shortcut,
-the machine-learning model that actually holds up, and how AI makes that model better —
-without ever being trusted to grade its own work.*
+the machine-learning model that actually holds up, and — the interesting part — **using AI to
+make that ML model measurably better**, without ever trusting the AI to grade its own work.*
 
 > **The 30-second version.** A health plan needs to know which members will cost the most in
 > the coming months, so it can budget and get help to those people early. You *could* just ask
@@ -30,6 +30,10 @@ days**. This matters for two very practical reasons:
    *early*, a care-management team can reach out before a manageable situation becomes a
    $200,000 hospital stay.
 
+This isn't a made-up scenario. Next-period cost forecasting and **high-cost claimant
+identification** are standard, daily practice for payers and actuaries — a small fraction of
+members really do drive most of the spend, and finding them early is
+[a well-studied problem in the industry](https://www.soa.org/globalassets/assets/files/resources/research-report/2018/2018-predict-high-cost-hcci.pdf).
 So the question is simple to state: **who's going to be expensive, and how expensive?**
 
 Let's try to answer it three ways.
@@ -72,14 +76,18 @@ Machine learning, in one sentence: instead of asking someone to guess, you **sho
 thousands of past examples and let it learn the pattern** — then you test it on examples it has
 never seen.
 
-That last part is the whole point. We don't take the model's word for anything. We hold back a
-chunk of history the model never trains on, and we score its predictions against what actually
-happened. That's a number you can defend.
+That last part is the whole point. We don't take the model's word for anything. And because
+we're forecasting the *future*, we're careful about how we test: we split the timeline so the
+model trains only on the past and is scored on a **later period it has never seen** — never
+letting it peek across the date it's predicting from. (Shuffle healthcare data randomly and
+you'll leak the future into training and fool yourself; the discipline here is deliberate.)
 
-For our problem we build features from each member's history — how much they cost in the last
-30, 90, and 180 days, how many visits, how many ER trips, how many different doctors — and train
-a standard model (gradient-boosted trees) to predict the next 90 days of cost.
-([`sql/01_base_features.sql`](sql/01_base_features.sql), [`src/modeling.py`](src/modeling.py))
+For our problem we engineer features from each member's history — spend in the last 30, 90, and
+180 days, visit counts, ER counts, how many distinct providers — computed with time-windowed SQL
+right where the data lives, so nothing leaks and nothing large is copied out
+([`sql/01_base_features.sql`](sql/01_base_features.sql)). Then we train gradient-boosted trees
+(XGBoost) on the log of cost — healthcare spend is extremely skewed, a handful of members cost
+100× the rest — to predict the next 90 days ([`src/modeling.py`](src/modeling.py)).
 
 How good is it? Compare it to the dumbest possible forecast — "just guess the typical member's
 cost for everyone":
@@ -106,9 +114,13 @@ Same 90-day total. The model gives them the same forecast. But member B's spendi
 underpredicts B by about **$13,000**, because the features it has describe *how much* a member
 spent, not *which direction they're heading*.
 
-This is a real, repeating pattern in the data. And it's exactly the kind of thing a human — or
-an AI — might spot and say, "you should add a feature for cost *acceleration*." Which brings us
-to the interesting part.
+Here's the ML craft that matters: we don't find this blind spot by eyeballing. We do **residual
+analysis** — line up every member by how badly the model missed, then let a small, readable
+model describe the group it underpredicts most ("members with very high recent visit counts and
+cost"). Finding *where a model is systematically wrong, and why* is the skill that separates
+tuning a model from actually improving it. And it's exactly the kind of gap a good idea — from a
+human or an AI — could close by adding a feature for cost *acceleration*. Which brings us to the
+interesting part: **using AI to generate those ideas, and ML to prove them.**
 
 ---
 
@@ -205,8 +217,32 @@ job it's bad at (deciding what's true) to something you can actually measure.
 
 ---
 
-*Under the hood this runs on real infrastructure — Snowflake for the governed data and SQL
-features, and Google Vertex AI for the AI proposals, the independent scoring of those proposals,
-experiment tracking, the model registry, a live prediction endpoint, and a pipeline that ties it
-together. The [code](https://github.com/sarathi-aiml/carecost-fusion-snowflake-vertex) walks
-through each piece, and [`ARCHITECTURE.md`](ARCHITECTURE.md) has the full design.*
+## How it's built on Vertex AI (for the ML engineers reading)
+
+The story above is deliberately simple, but the plumbing underneath is a full, real
+machine-learning lifecycle on **Google Vertex AI** — not a notebook demo. Each piece earns its
+place:
+
+- **Gemini with function calling** — the AI doesn't return free text we have to parse and hope
+  about; it calls a typed `propose_feature` tool constrained to a whitelist, so its output is
+  structured, validated, and impossible to turn into rogue SQL. ([`src/gemini_hypothesis.py`](src/gemini_hypothesis.py))
+- **Vertex AI Gen AI Evaluation** — before a proposal ever reaches the ML test, an independent
+  autorater scores how well-grounded the AI's *reasoning* is against the evidence, with a custom
+  rubric. We don't even take the AI's explanation on faith. ([`src/vertex_geneval.py`](src/vertex_geneval.py))
+- **Vertex AI Experiments** — every run (baseline and each challenger) is logged with its params
+  and metrics, so the accept/reject decisions have a paper trail. ([`src/vertex_experiments.py`](src/vertex_experiments.py))
+- **Vertex Model Registry** — the winning model is versioned and cataloged; only a tiny model
+  artifact leaves Snowflake, never the data. ([`src/vertex_registry.py`](src/vertex_registry.py))
+- **Online Endpoint + Explainable AI** — the champion is served for real-time scoring with
+  per-feature attributions, so a prediction comes with a "why." ([`src/vertex_prediction.py`](src/vertex_prediction.py))
+- **Vertex AI Pipelines (KFP)** — the whole loop (features → baseline → propose → test → register)
+  runs as an orchestrated, reproducible pipeline. ([`src/vertex_pipeline.py`](src/vertex_pipeline.py))
+
+Two platforms, each doing what it's best at: **Snowflake** governs the data and does the SQL
+feature engineering; **Vertex AI** runs the model lifecycle and the AI-assisted feature
+discovery. The full design is in [`ARCHITECTURE.md`](ARCHITECTURE.md); the
+[code](https://github.com/sarathi-aiml/carecost-fusion-snowflake-vertex) is readable end to end.
+
+*The real takeaway isn't the LLM. It's the combination: **strong, measured ML as the backbone,
+and AI used to make it better** — proposing what a human might miss, while every idea still has
+to prove itself on data the model has never seen.*
