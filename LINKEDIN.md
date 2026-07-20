@@ -1,47 +1,51 @@
 # LinkedIn post
 
-*(Copy-paste ready. Swap the [link] before posting. ~220 words.)*
+*(Copy-paste ready. Swap the [link] before posting.)*
 
 ---
 
-Everyone's using AI to *suggest* things now — features, segments, rules, next steps.
+**Healthcare cost prediction is a machine-learning problem. So why is everyone trying to solve it with a chatbot?**
 
-Here's the part nobody says out loud: a language model can't tell you whether its own suggestion is actually any good. It just sounds confident.
+A health plan needs to know which members will be expensive next quarter — to budget, and to get care teams to high-cost members early. It's a real, daily actuarial problem, not a hypothetical.
 
-So I built a small project to enforce the discipline — healthcare cost prediction, on a hybrid **Snowflake + Google Vertex AI** stack:
+You *could* paste a member's history into an AI and ask. It'll answer confidently — and you'll have no way to check it, repeat it, or measure it. A prediction you're accountable for isn't a conversation. It's a measurement.
 
-🔹 **Snowflake** stores the claims and builds the features in SQL. The data never leaves the warehouse — the AI only ever sees an anonymous summary.
+So I built it the way it should be built: **ML does the predicting, and AI makes the ML better.**
 
-🔹 **Gemini** (on Vertex AI) looks at *where the model is going wrong* and proposes new features to fix it.
+🔹 A gradient-boosted model — trained and tested on a proper time-based holdout (no peeking into the future) — predicts each member's next-90-day cost. ~2.4× more accurate than a naive baseline.
 
-🔹 But Gemini doesn't get a vote. Every idea is trained into a real model and tested on data it has never seen.
+🔹 Residual analysis finds where it's systematically wrong. Then **Gemini** (on Google Vertex AI) proposes new features to fix those misses — from a fixed menu, as structured tool calls, never free-text.
 
-🔹 Only ideas that **measurably improve the prediction** are kept.
+🔹 Every proposed feature has to earn its place on unseen data. The AI gets no vote.
 
-The result: Gemini proposed 3 confident ideas. The holdout test accepted 1 and rejected 2 — including one Gemini was 90% sure about.
+The result: Gemini proposed 3 features, confidently. The holdout test kept 1 and rejected 2 — including one the AI was **90% sure** about.
 
 **Gemini proposes. XGBoost proves. Snowflake governs.**
 
-The interesting engineering isn't "we used an LLM." It's the guardrails around it: propose within limits, prove on held-out data, keep the data governed in the warehouse. Two great platforms, each doing what it's best at.
+The interesting part was never "we used an LLM." It's the combination — **measured ML as the backbone, AI to surface ideas a human might miss**, and nothing trusted until the data confirms it.
 
-Full write-up + code (function calling, Gen AI Evaluation, Model Registry, a Vertex AI Pipeline): [link]
+Built end-to-end on **Snowflake + Google Vertex AI** — function calling, Gen AI Evaluation, Experiments, Model Registry, a serving endpoint with explainability, and a Vertex AI Pipeline.
 
-#MachineLearning #MLOps #Snowflake #VertexAI #GenAI #HealthcareAnalytics #AI
+Full write-up + code 👉 [link]
+
+#MachineLearning #MLOps #VertexAI #Snowflake #GenAI #HealthcareAnalytics #AI
 
 ---
 
-## Shorter variant (for the character-conscious, ~90 words)
+## Shorter variant (~110 words)
 
-AI can *suggest* ideas. It can't tell you if they're right — it just sounds confident.
+**Healthcare cost prediction is an ML problem — not a chatbot problem.**
 
-So I built a healthcare-cost predictor where an AI proposes and a test decides:
+A health plan needs to know who'll be expensive next quarter. Ask an AI directly and you get a confident number you can't check, repeat, or measure.
 
-→ **Snowflake** holds the data + builds features (data never leaves the warehouse)
-→ **Gemini** on Vertex AI proposes new features to fix the model's blind spots
-→ A held-out test — not the AI — accepts or rejects each one
+So I built it right: **ML predicts, AI improves the ML.**
 
-Gemini proposed 3 ideas. The test kept 1, rejected 2 (one it was 90% sure about).
+→ A gradient-boosted model forecasts each member's next-90-day cost (2.4× better than baseline, tested on unseen data).
+→ Gemini on Vertex AI proposes new features for where the model misses.
+→ Each idea must prove itself on held-out data. The AI gets no vote.
+
+3 proposed, 1 kept, 2 rejected — including one Gemini was 90% sure about.
 
 Gemini proposes. XGBoost proves. Snowflake governs. 👉 [link]
 
-#MLOps #Snowflake #VertexAI #GenAI
+#MachineLearning #MLOps #VertexAI #Snowflake #GenAI
