@@ -5,7 +5,7 @@
 **Healthcare cost prediction is a machine-learning problem. Let's not try to solve it with an AI agent.**
 *Snowflake + Google Cloud – Vertex ML (Model Registry, Experiments, AI Eval for ML, Vertex Pipelines) — a cross-cloud build.*
 
-📖 **Read the full write-up:** [add published blog link here] · code walkthrough in [BLOG.md](BLOG.md)
+📖 **Read the full write-up:** https://sarathi-data-ml-cloud.medium.com/healthcare-cost-prediction-is-a-machine-learning-problem-dc52cbd1fb9c
 
 ### 🧠 In plain English
 
