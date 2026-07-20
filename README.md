@@ -7,6 +7,7 @@
 
 📖 **Read the full write-up:** https://sarathi-data-ml-cloud.medium.com/healthcare-cost-prediction-is-a-machine-learning-problem-dc52cbd1fb9c
 (no paywall)
+![Architecture](https://github.com/sarathi-aiml/carecost-ML-snowflake-gcp-vertex/blob/main/nano-banana-2026-07-20T02-54-16.png?raw=true)
 
 ### 🧠 In plain English
 
