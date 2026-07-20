@@ -141,7 +141,7 @@ gcloud storage rm --recursive gs://<PROJECT_ID>-carecost
 
 ```
 app.py                    Streamlit demo UI (the video centerpiece)
-BLOG.md · ARCHITECTURE.md · TCO.md · DEMO.md · TEARDOWN.md
+
 src/
   generate_claims.py      deterministic synthetic claims (hidden growth trajectory)
   features.py             the feature windows (also the pipeline's synthetic source)
