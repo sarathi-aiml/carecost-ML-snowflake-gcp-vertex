@@ -1,4 +1,6 @@
-# Which members will be expensive next quarter?
+# Healthcare cost prediction is a machine-learning problem. Let's not try to solve it with an AI agent.
+
+*Snowflake + Google Cloud – Vertex ML (Model Registry, Experiments, AI Eval for ML, Vertex Pipelines) — a cross-cloud build.*
 
 *A real healthcare-cost problem, solved three ways: the tempting "just ask the AI" shortcut,
 the machine-learning model that actually holds up, and — the interesting part — **using AI to
@@ -16,7 +18,7 @@ make that ML model measurably better**, without ever trusting the AI to grade it
 
 ---
 
-## The job
+## The job: which members will be expensive next quarter?
 
 Imagine you work at a health plan — the company that pays members' medical bills. Every doctor
 visit, ER trip, hospital stay, and prescription becomes a **claim**: a billed event with a

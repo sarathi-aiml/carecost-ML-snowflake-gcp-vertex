@@ -2,6 +2,11 @@
 
 > **Gemini proposes. XGBoost proves. Snowflake governs.**
 
+**Healthcare cost prediction is a machine-learning problem. Let's not try to solve it with an AI agent.**
+*Snowflake + Google Cloud – Vertex ML (Model Registry, Experiments, AI Eval for ML, Vertex Pipelines) — a cross-cloud build.*
+
+📖 **Read the full write-up:** [add published blog link here] · code walkthrough in [BLOG.md](BLOG.md)
+
 ### 🧠 In plain English
 
 AI chatbots are great at *suggesting* ideas — but they can't tell you whether a suggestion is
